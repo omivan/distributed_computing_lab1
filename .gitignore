@@ -1,0 +1,16 @@
+*.o
+*.out
+*.exe
+*.a
+*.so
+*.dylib
+main
+
+.venv/
+
+*.pyc
+*.pyo
+*.pyd
+
+.DS_Store
+Thumbs.db
