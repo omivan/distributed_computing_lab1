@@ -39,21 +39,21 @@ void* threadFunction(void* arg) {
     return NULL;
 }
 
-int main() {
-    printf("PID of this process: %d\n", getpid());
-    const int numThreads = 7; 
+void executeThreads(int policy, const char* filename) {
+    printf("Executing threads with policy %d\n", policy);
+    const int numThreads = 8;
     pthread_t threads[numThreads];
     struct ThreadData threadData[numThreads];
-
     int basePriority = 10;
 
-    pthread_mutex_init(&start_mutex, NULL);
-    pthread_cond_init(&start_cond, NULL);
+    pthread_mutex_lock(&start_mutex);
+    start = 0;
+    pthread_mutex_unlock(&start_mutex);
 
-    for (int i = 0; i < numThreads - 1; i++) {
+    for (int i = 0; i < numThreads - 1; i++) { 
         pthread_attr_t attr;
         pthread_attr_init(&attr);
-        pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+        pthread_attr_setschedpolicy(&attr, policy);
 
         struct sched_param param;
         pthread_attr_getschedparam(&attr, &param);
@@ -66,7 +66,7 @@ int main() {
         pthread_attr_destroy(&attr);
     }
 
-    threadData[numThreads - 1].priority = -1;
+    threadData[numThreads - 1].priority = -1; 
     pthread_create(&threads[numThreads - 1], NULL, threadFunction, &threadData[numThreads - 1]);
 
     pthread_mutex_lock(&start_mutex);
@@ -78,11 +78,10 @@ int main() {
         pthread_join(threads[i], NULL);
     }
 
-    FILE *fp;
-    fp = fopen("threadData.txt", "w");
+    FILE *fp = fopen(filename, "w");
     if (fp == NULL) {
         perror("Error opening file.");
-        return 1;
+        exit(1);
     }
 
     for (int i = 0; i < numThreads; i++) {
@@ -93,6 +92,15 @@ int main() {
         }
     }
     fclose(fp);
+}
+
+int main() {
+    printf("PID = %d\n", getpid());
+    pthread_mutex_init(&start_mutex, NULL);
+    pthread_cond_init(&start_cond, NULL);
+
+    executeThreads(SCHED_FIFO, "threadDataFIFO.txt");
+    executeThreads(SCHED_RR, "threadDataRR.txt");
 
     pthread_mutex_destroy(&start_mutex);
     pthread_cond_destroy(&start_cond);
